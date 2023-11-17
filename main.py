@@ -1,44 +1,81 @@
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error
+from sklearn.ensemble import RandomForestRegressor
 import seaborn as sns
 
 # import datasets
 df = pd.read_csv('train.csv')
+df_test = pd.read_csv('test.csv')
 pd.set_option('display.max_columns', None)
-
-# Data verkenning
-# print(df.describe())
-
-# Correlatie Matrix
-# corr_matrix = df.corr()
-# print(corr_matrix)
-# sns.heatmap(corr_matrix, annot=False, cmap='coolwarm', fmt='.2f')
-# plt.show()
-
+pd.set_option('display.max_rows', None)
 
 # sns.histplot(df['SalePrice'], bins=30, kde=True)
 # plt.show()
+df = df.fillna(0)
+# Selecteer alle non=numeric columns
+non_numeric_cols = df.select_dtypes(exclude='number')
+# Maak voor elke kolom een value mapping voor algoritme
+for column in non_numeric_cols.columns:
+    # df[column] = df[column].fillna(0)
+    # Maak een lege dict aan
+    value_mapping = {}
+    # Geef elke unieke waarde in de kolom een numerieke waarde
+    for unique_value in df[column].unique():
+        value_mapping[unique_value] = len(value_mapping) + 1
+    # Map de numerieke waarde aan de kolom waarde
+    df[column] = df[column].map(value_mapping)
 
-# Missende gegevens
-# Controleer voor missende gegevens
-missing_data = df.isnull().sum()
-# print(missing_data[missing_data > 0])
+print(df.head())
+# Subset dataset voor regressie model
+X = df[['GrLivArea']]
+# X = df.drop('SalePrice', axis=1)
+y = df['SalePrice']
 
-# Data aanvullen
-df['Alley'] = df['Alley'].fillna(0)
-alley = {'Grvl': 2, 'Pave': 1, 0: 0}
-df['Alley'] = df['Alley'].map(alley)
+# Verdeel de data in train en test sets
+X_train, X_test, Y_train, Y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-df['LotFrontage'] = df['LotFrontage'].fillna(0)
+# init lineair regressie model
+model = RandomForestRegressor(n_estimators=100, random_state=42)
 
-# Vult NaN waardes met 0
-df['MasVnrType'] = df['MasVnrType'].fillna(0)
-# Dit is een dictionary met de text waardes (Zie data description) en hun numerieke waardes
-brick_type = {'BrkCmn': 5, 'BrkFace': 4, 'CBlock': 3, 'None': 2, 'Stone': 1, 0: 0}
-# Dit mapt automatisch de numerieke waardes aan de tekst waardes
-df['MasVnrType'] = df['MasVnrType'].map(brick_type)
-# Controle of de map goed is uitgevoerd. Mag geen NaN meer bevatten!
-print(df['MasVnrType'].unique())
-# Deze code controleert of alle lege waardes zijn vervangen met numerieke waardes.
-missing_data = df.isnull().sum()
-print(missing_data[missing_data > 0])git add 
+# Fit het model op de trainingsdata
+model.fit(X_train, Y_train)
+
+# Maak voorspellingen op de test set
+y_pred = model.predict(X_test)
+
+# Bereken en print score
+model.score(X_train, Y_train)
+score = round(model.score(X_train, Y_train) * 100, 2)
+print(f'Score: {score}')
+
+# Maak plot voor de regressielijn
+plt.scatter(X_test, Y_test, color='black', label='Actual')
+plt.scatter(X_test, y_pred, color='red', label='Predicted')
+
+sort_order = np.argsort(X_test.values.flatten())
+plt.plot(X_test.values[sort_order], y_pred[sort_order], color='blue', linewidth=3, label='Regression Line')
+
+plt.title('Random Forest Regression')
+plt.xlabel('GrLivArea')
+plt.ylabel('SalePrice')
+plt.legend()
+plt.show()
+
+# Laat de meest interessante waardes zien:
+importances = pd.DataFrame({'feature': X_train.columns, 'importance': np.round(model.feature_importances_,3)})
+importances = importances.sort_values('importance', ascending=False).set_index('feature')
+
+# Residuen plot
+residu = Y_test - y_pred
+plt.scatter(X_test, residu, color='black')
+plt.axhline(y=0, color='red', linestyle='--', linewidth=2)
+plt.title('Residuen Plot')
+plt.xlabel('GrLivArea')
+plt.ylabel('Residuen')
+plt.show()
+
+print(importances.head(80))
