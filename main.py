@@ -1,9 +1,6 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error
 
 # import datasets
 df = pd.read_csv('train.csv')
@@ -45,7 +42,3 @@ print(df['MasVnrType'].unique())
 # Deze code controleert of alle lege waardes zijn vervangen met numerieke waardes.
 missing_data = df.isnull().sum()
 print(missing_data[missing_data > 0])
-
-
-
-
