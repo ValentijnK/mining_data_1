@@ -10,18 +10,22 @@ import seaborn as sns
 # import datasets
 df = pd.read_csv('train.csv')
 df_test = pd.read_csv('test.csv')
+# Display Options
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
 
-# sns.histplot(df['SalePrice'], bins=30, kde=True)
-# plt.show()
+# Voorbeeld van de data bekijken
+print(df.head())
+# Dataset variabelen verkennen
+print(df.info())
+
+# Data opschonen
 df = df.fillna(0)
-# Selecteer alle non=numeric columns
+# Selecteer alle niet numerieke kolommen
 non_numeric_cols = df.select_dtypes(exclude='number')
-# Maak voor elke kolom een value mapping voor algoritme
+# Maak voor elke kolom een value mapping naar numeriek. (Benodigd voor random forest algoritme)
 for column in non_numeric_cols.columns:
-    # df[column] = df[column].fillna(0)
-    # Maak een lege dict aan
+    # Maak een lege dict aan voor de value mapping
     value_mapping = {}
     # Geef elke unieke waarde in de kolom een numerieke waarde
     for unique_value in df[column].unique():
@@ -29,10 +33,17 @@ for column in non_numeric_cols.columns:
     # Map de numerieke waarde aan de kolom waarde
     df[column] = df[column].map(value_mapping)
 
-print(df.head())
+# Correlatie heatmap maken
+corr_matrix = df.corr()
+plt.figure(figsize=(40, 20))
+sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', fmt='.2f', vmin=-1, vmax=1)
+plt.show()
+
+
+
+
 # Subset dataset voor regressie model
-X = df[['GrLivArea']]
-# X = df.drop('SalePrice', axis=1)
+X = df.drop('SalePrice', axis=1)
 y = df['SalePrice']
 
 # Verdeel de data in train en test sets
@@ -71,7 +82,7 @@ importances = importances.sort_values('importance', ascending=False).set_index('
 
 # Residuen plot
 residu = Y_test - y_pred
-plt.scatter(X_test, residu, color='black')
+plt.scatter(y_pred, residu, color='black')
 plt.axhline(y=0, color='red', linestyle='--', linewidth=2)
 plt.title('Residuen Plot')
 plt.xlabel('GrLivArea')
